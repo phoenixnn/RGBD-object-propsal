@@ -1,0 +1,99 @@
+
+% load split data
+var = load('data/nyuv2/nyusplits.mat');
+set_type = 'test';
+if strcmp(set_type, 'test')
+    imlist = var.tst - 5000;
+else
+    imlist = var.trainval - 5000;
+end
+
+
+% parfor i = 1 : num_images
+% pid = tst(i);
+% fprintf('**************processing image %d ***************\n', pid);
+% if exist(fullfile(res_Jmat_Path, [num2str(pid) '.mat']), 'file')
+%     fprintf('skip %d\n', pid);
+%     continue;
+% end
+% var = load(fullfile(segPath, [num2str(pid) '.mat']));
+% %segMasks = var.masks;
+% segMasks = var.segMasks;
+% % segMasks = m_parload(fullfile(segPath, [num2str(pid) '.mat']), 'segMasks');
+% [GtMasks, GtLabels] = m_getMasksGT(GtPath, pid);
+% 
+% 
+% Jmat = m_SEG_VS_GT(segMasks, GtMasks);
+% m_parsave(fullfile(res_Jmat_Path,[num2str(pid) '.mat']), Jmat);
+% m_parsave(fullfile(res_label_Path,[num2str(pid) '.mat']), GtLabels);
+% %save(fullfile(res_Jmat_Path,[num2str(pid) '.mat']), 'Jmat');
+% end
+
+%% extract stat info from Jmats
+ncandSet =  [10:5:100,125:25:1000,1500:500:6000,10000]; % use the first ncand proposals
+num_ncand = numel(ncandSet);
+
+% get the total number of objects in tst dataset
+num_objects = 0;
+for i = 1 : num_images
+    pid = tst(i);
+    var = load(fullfile(res_Jmat_Path, [num2str(pid) '.mat']));
+    Jmat = var.Jmat;
+    num_objects = num_objects + size(Jmat,1);
+end
+
+% get the total object classes
+objLabels = zeros(num_objects, 1);
+k = 1;
+for i = 1 : num_images
+    var = load(fullfile(res_label_Path, [num2str(pid) '.mat']));
+    GtLabels = var.GtLabels;
+    nobjs = numel(GtLabels);
+    objLabels(k:(k+nobjs-1)) = GtLabels;
+    k = k + nobjs;
+end
+
+% compute best Jaccard for each objects
+Jmax = zeros(num_objects, num_ncand);
+n_mask_sel = zeros(num_images, num_ncand);
+for i = 1 : num_ncand
+    ncand = ncandSet(i);
+    k = 1;
+    for j = 1 : num_images
+        pid = tst(j);
+        var = load(fullfile(res_Jmat_Path, [num2str(pid) '.mat']));
+        Jmat = var.Jmat;
+        [nobjs, nprops] = size(Jmat);
+        nsel = min(nprops, ncand);
+        % choose first nsel proposals
+        Jmat = Jmat(:, 1:nsel);
+        Jmax_1 = max(Jmat, [], 2);
+        % save to Jmax
+        Jmax(k:(k+nobjs-1),i) = Jmax_1;
+        % update k
+        k = k + nobjs;
+        % save nsel
+        n_mask_sel(j,i) = nsel;
+    end
+end
+
+avg_n_mask_sel = mean(n_mask_sel);
+save(fullfile(res_eval_Path, 'res.mat'), 'Jmax','n_mask_sel','objLabels');
+
+%% JI
+figure;
+grid on;
+grid minor;
+xlabel('Number of candidates');
+ylabel('Jaccard');
+title('Segment proposals on NYUV2 dataset');
+Methods = {'ours','others'};
+for k = 1 : 1
+    hold on;
+    Ji = sum(Jmax, 1);
+    plot(avg_n_mask_sel, Ji/num_objects, 'r-'); 
+    legend(Methods{k});
+end
+
+
+delete(gcp('nocreate'));
