@@ -11,3 +11,8 @@ If you use this project for your research, please cite:
       year={2016},
       publisher={Elsevier}
     }
+
+1 Get the NYU data:
+  wget http://www.cis.temple.edu/~latecki/TestData/NYUv2data.zip
+2 Get precomputed results (plane segmentations, bounding boxes, object segments): 
+  wget http://www.cis.temple.edu/~latecki/TestData/NYUv2result.zip
