@@ -16,4 +16,5 @@ If you use this project for your research, please cite:
         
     wget http://www.cis.temple.edu/~latecki/TestData/NYUv2data.zip
 2 Get precomputed results (plane segmentations, bounding boxes, object segments): 
-        wget http://www.cis.temple.edu/~latecki/TestData/NYUv2result.zip
+    
+    wget http://www.cis.temple.edu/~latecki/TestData/NYUv2result.zip
